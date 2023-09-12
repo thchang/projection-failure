@@ -1,0 +1,6 @@
+[submodule "experiments/ds_v1/DelaunaySparse"]
+	path = experiments/ds_v1/DelaunaySparse
+	url = https://github.com/vtopt/DelaunaySparse.git
+[submodule "experiments/ds_v2/DelaunaySparse"]
+	path = experiments/ds_v2/DelaunaySparse
+	url = https://github.com/vtopt/DelaunaySparse.git
