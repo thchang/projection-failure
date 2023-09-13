@@ -12,11 +12,11 @@ training points $P$, denoted $CH(P)$.
 
 This is done by solving
 $$
-\min_{x\in\mathbb{R}^n} || Wx - z ||^2
+\min_{x\in R^n} || Wx - z ||^2
 $$
 such that
 $$ \sum x = 1; x \geq 0$$
-where $P$ consists of $n$ points in $\mathbb{R}^d$,
+where $P$ consists of $n$ points in $R^d$,
 and $W = [p_1 | p_2 | ... | p_n]$ for
 $p_i \in P$.
 
