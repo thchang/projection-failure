@@ -120,7 +120,7 @@ for fname in os.scandir(data_dir):
                     prob.solve(
                                solver="OSQP",
                                max_iter=10000,
-                               eps_rel=4.0e-12,
+                               eps_rel=1.8e-12,
                                # verbose=True
                               )
                 ### Compute the actual projection.
@@ -150,7 +150,7 @@ for fname in os.scandir(data_dir):
                     prob.solve(
                                solver="ECOS",
                                max_iters=10000,
-                               reltol=4.0e-12,
+                               reltol=1.8e-12,
                                # verbose=True,
                               )
                 ### Compute the actual projection.
@@ -180,7 +180,7 @@ for fname in os.scandir(data_dir):
                     prob.solve(
                                solver="SCS",
                                max_iters=10000,
-                               eps=4.0e-12,
+                               eps=1.8e-12,
                                # verbose=True,
                               )
                 ### Compute the actual projection.
