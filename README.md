@@ -16,7 +16,7 @@ $\min_{x\in R^n} || Wx - z ||^2$
 
 such that
 
-$ \sum x = 1; x \geq 0$
+$\sum x = 1; x \geq 0$
 
 where $P$ consists of $n$ points in $R^d$,
 and $W = [p_1 | p_2 | ... | p_n]$ for
