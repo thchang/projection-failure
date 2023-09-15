@@ -1,4 +1,5 @@
 import csv
+import ctypes
 import cvxpy as cp
 import ds_v1.DelaunaySparse.python.delsparse as delsparse_v1
 import ds_v2.DelaunaySparse.python.delsparse as delsparse_v2
@@ -12,7 +13,7 @@ d = 0; n = 0; m = 0
 
 # Loop over all datasets in the data_dir
 for fname in os.scandir(data_dir):
-    if fname.is_file():
+    if fname.is_file():# and fname.name in ["sample_extrap10d.dat"]:
 
         # Load the data set for testing
 
@@ -45,18 +46,51 @@ for fname in os.scandir(data_dir):
             # print(pts.shape)
             # print(q.shape)
 
-        # Solve with DELAUNAYSPARSE v1 (SLATEC / DWNNLS method)
+        # Solve with DELAUNAYSPARSE v2 (BQPD method)
 
         # Copy pts, q into Fortran contiguous array
-        p_in = np.zeros(shape=pts.shape, dtype=np.float64, order="F")
+        p_in = np.zeros(shape=pts.shape, dtype=ctypes.c_double, order="F")
         for i, pi in enumerate(pts):
             p_in[i, :] = pi[:]
-        q_in = np.zeros(shape=q.shape, dtype=np.float64, order="F")
+        q_in = np.zeros(shape=q.shape, dtype=ctypes.c_double, order="F")
         for i, qi in enumerate(q):
             q_in[i, :] = qi[:]
         # Allocate output arrays
+        error_out = np.ones(shape=(m,), dtype=np.int32, order="F")
+        rnorm_out = np.ones(shape=(m,), dtype=ctypes.c_double, order="F")
+        # Call DelaunaySparse v2
+        for i, qi in enumerate(q_in.T):
+            _, rnorm_out[i], error_out[i], _ = delsparse_v2.project(d, n, p_in, qi)
+            print(f"BQPD finished projecting point {i}")
+        # Count the number of failures and print
+        error_count = 0
+        extrap_pts = []
+        for i, ierr in enumerate(error_out):
+            if ierr == 0:
+                if rnorm_out[i] > 1.0e-10:
+                    extrap_pts.append(i)
+            elif ierr not in range(70, 80):
+                print(f"WARNING: an unexpected error occurred: {ierr}")
+            else:
+                error_count += 1
+        # Update number of extrapolation points
+        print(f"Extrapolation points: {len(extrap_pts)} / {m}")
+        m = len(extrap_pts)
+        print("Method: DelaunaySparse v2 (BQPD),\t" +
+              f"% solved: {100 - (100 * error_count / m)}")
+
+        # Solve with DELAUNAYSPARSE v1 (SLATEC / DWNNLS method)
+
+        # Copy pts, q into Fortran contiguous array
+        p_in = np.zeros(shape=pts.shape, dtype=ctypes.c_double, order="F")
+        for i, pi in enumerate(pts):
+            p_in[i, :] = pi[:]
+        q_in = np.zeros(shape=q[:,extrap_pts].shape, dtype=ctypes.c_double, order="F")
+        for i, qi in enumerate(q[:,extrap_pts]):
+            q_in[i, :] = qi[:]
+        # Allocate output arrays
         simp_out = np.ones(shape=(d+1, m), dtype=np.int32, order="F")
-        weights_out = np.ones(shape=(d+1, m), dtype=np.float64, order="F")
+        weights_out = np.ones(shape=(d+1, m), dtype=ctypes.c_double, order="F")
         error_out = np.ones(shape=(m,), dtype=np.int32, order="F")
         # Call DelaunaySparse v1
         delsparse_v1.delaunaysparses(d, n, p_in, m, q_in, simp_out,
@@ -73,39 +107,11 @@ for fname in os.scandir(data_dir):
         print("Method: DelaunaySparse v1 (DWNNLS),\t" +
               f"% solved: {100 - (100 * error_count / m)}")
 
-        # Solve with DELAUNAYSPARSE v2 (BQPD method)
-
-        # Copy pts, q into Fortran contiguous array
-        p_in = np.zeros(shape=pts.shape, dtype=np.float64, order="F")
-        for i, pi in enumerate(pts):
-            p_in[i, :] = pi[:]
-        q_in = np.zeros(shape=q.shape, dtype=np.float64, order="F")
-        for i, qi in enumerate(q):
-            q_in[i, :] = qi[:]
-        # Allocate output arrays
-        simp_out = np.ones(shape=(d+1, m), dtype=np.int32, order="F")
-        weights_out = np.ones(shape=(d+1, m), dtype=np.float64, order="F")
-        error_out = np.ones(shape=(m,), dtype=np.int32, order="F")
-        # Call DelaunaySparse v2
-        delsparse_v2.delaunaysparses(d, n, p_in, m, q_in, simp_out,
-                                     weights_out, error_out, extrap=100.0)
-        # Count the number of failures and print
-        error_count = 0
-        for ierr in error_out:
-            if ierr <= 2:
-                continue
-            elif ierr != 71:
-                print(f"WARNING: an unexpected error occurred: {ierr}")
-            else:
-                error_count += 1
-        print("Method: DelaunaySparse v2 (BQPD),\t" +
-              f"% solved: {100 - (100 * error_count / m)}")
-
         # Solve with CVXPY with the OSQP solver
 
         # Loop over all extrapolation points and count the number of errors
         error_count = 0
-        for qi in q.T:
+        for qi in q[:,extrap_pts].T:
             # Allocate memory for problem
             A = pts.copy()
             b = qi.copy()
@@ -135,7 +141,7 @@ for fname in os.scandir(data_dir):
 
         # Loop over all extrapolation points and count the number of errors
         error_count = 0
-        for qi in q.T:
+        for qi in q[:,extrap_pts].T:
             # Allocate memory for problem
             A = pts.copy()
             b = qi.copy()
@@ -165,7 +171,7 @@ for fname in os.scandir(data_dir):
 
         # Loop over all extrapolation points and count the number of errors
         error_count = 0
-        for qi in q.T:
+        for qi in q[:,extrap_pts].T:
             # Allocate memory for problem
             A = pts.copy()
             b = qi.copy()
