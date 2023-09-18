@@ -13,7 +13,7 @@ d = 0; n = 0; m = 0
 
 # Loop over all datasets in the data_dir
 for fname in os.scandir(data_dir):
-    if fname.is_file():# and fname.name in ["sample_extrap10d.dat"]:
+    if fname.is_file() and fname.name in ["sample_extrap10d.dat"]:
 
         # Load the data set for testing
 
