@@ -1,6 +1,6 @@
 n,total number of extrapolation points,average condition number,BQPD success rate,DWNNLS success rate,OSQP success rate,ECOS success rate,SCS success rate
 1000,169,248.03289573726562,1.0,0.34911242603550297,0.21893491124260356,1.0,0.0
-n,total number of extrapolation points,average condition number,BQPD success rate,DWNNLS success rate,OSQP success rate,ECOS success rate,SCS success rate
 5000,142,97.22957239490206,1.0,0.3380281690140845,0.021126760563380254,0.9859154929577465,0.0
-n,total number of extrapolation points,average condition number,BQPD success rate,DWNNLS success rate,OSQP success rate,ECOS success rate,SCS success rate
 10000,124,92.72583730557719,1.0,0.25,0.08064516129032262,0.9596774193548387,0.0
+15000,112,91.17464768703393,1.0,0.1696428571428571,0.2053571428571429,0.9553571428571429,0.0
+20000,100,91.44440232462634,1.0,0.15000000000000002,0.18000000000000005,0.92,0.0

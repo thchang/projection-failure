@@ -37,7 +37,7 @@ with open(fname, "r") as fp:
                 test[j, i-2-n] = float(colj.strip())
 
 # Generate various training sizes
-for nk in [20000]:#[1000, 5000, 10000, 20000]:
+for nk in [15000]:#[1000, 5000, 10000, 15000, 20000]:
 
     # Count total failures
     ntotal_bqpd_failures = 0
