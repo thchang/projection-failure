@@ -36,8 +36,20 @@ with open(fname, "r") as fp:
             for j, colj in enumerate(rowi):
                 test[j, i-2-n] = float(colj.strip())
 
+# Print the csv header
+with open(rname, "w") as fp:
+    csv_writer = csv.writer(fp)
+    csv_writer.writerow(["n",
+                         "total number of extrapolation points",
+                         "average condition number",
+                         "BQPD success rate",
+                         "DWNNLS success rate",
+                         "OSQP success rate",
+                         "ECOS success rate",
+                         "SCS success rate"])
+
 # Generate various training sizes
-for nk in [15000]:#[1000, 5000, 10000, 15000, 20000]:
+for nk in [1000, 5000, 10000, 15000, 20000]:
 
     # Count total failures
     ntotal_bqpd_failures = 0
@@ -287,14 +299,6 @@ for nk in [15000]:#[1000, 5000, 10000, 15000, 20000]:
     total_conditioning /= 10.0
     with open(rname, "a") as fp:
         csv_writer = csv.writer(fp)
-        csv_writer.writerow(["n",
-                             "total number of extrapolation points",
-                             "average condition number",
-                             "BQPD success rate",
-                             "DWNNLS success rate",
-                             "OSQP success rate",
-                             "ECOS success rate",
-                             "SCS success rate"])
         csv_writer.writerow([nk,
                              ntotal_extrap_pts,
                              total_conditioning,
