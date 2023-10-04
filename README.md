@@ -49,13 +49,14 @@ to install and build dependencies:
  - Next make sure that you have ``python 3.8`` or newer;
  - ``pip install`` the ``REQUIREMENTS.txt`` file in the base directory;
  - Fetch the old and new versions of DelaunaySparse into the ``experiments``
-   subdirectory using the command
-   ``git pull --recurse-submodules``
+   subdirectory using the commands
+   ``git submodule init``
+   ``git submodule update --recursive --remote``
  - To build and test DelaunaySparse's shared object libraries, use the
    command
-   ``cd experiments/ds_v1/DelaunaySparse/python && python example.py``
+   ``pushd experiments/ds_v1/DelaunaySparse/python && python3 example.py && popd``
    and
-   ``cd experiments/ds_v2/DelaunaySparse/python && python example.py``
+   ``pushd experiments/ds_v2/DelaunaySparse/python && python example.py && popd``
 
 ## Reproducing Results
 
