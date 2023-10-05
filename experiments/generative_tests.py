@@ -3,8 +3,10 @@
 # Python builtins.
 import os
 import math
+import time
 import pickle
 import random
+import hashlib
 import functools
 import itertools
 # External library.
@@ -108,75 +110,80 @@ data_variable_values = list(map(dict, itertools.product(
     [("scale", v) for v in (2**(-20), 1, 2**63)],
 )))
 
+num_trials = 10
+output_dir = f"generative_results"
+os.makedirs(output_dir, exist_ok=True)
 
-seed = 0
+# Iterate over both Delaunay versions.
 for version in (1, 2):
-    output_dir = f"generative_results_v{version}"
-    os.makedirs(output_dir, exist_ok=True)
-
     # Run all experiments.
     for (name, creator) in data_set_creators:
-        # Make sure we get consistent data generation.
-        random.seed(0)
         for kwargs in data_variable_values:
-            # Skip skew for creators that don't have any skew option.
-            if ("skew" not in name) and (kwargs["skew"] != 1):
-                continue
-            # Ensure that "n" is at least "d+1".
-            kwargs["n"] = max(kwargs["n"], kwargs["d"]+1)
-            print(name, kwargs)
-            # Generate the path for saving the results.
-            data_path = os.path.join(output_dir, "_".join((k+f"={v}" for (k,v) in kwargs.items())) + ".pkl")
-            if os.path.exists(data_path):
-                with open(data_path, "rb") as f:
-                    data = pickle.load(f)
-                    print("", data["prediction_time"], "seconds,",
-                          data["num_errors"], "errors with codes",
-                          [e for e in data["errors"].keys() if e != 1])
+            kwargs_hash = abs(int.from_bytes(hashlib.sha256(pickle.dumps(sorted(kwargs.items()))).digest())) % (2**31)
+            for trial in range(num_trials):
+                # Make sure we get consistent data generation.
+                seed = kwargs_hash + trial
+                np.random.seed(seed)
+                random.seed(seed)
+                # Skip skew for creators that don't have any skew option.
+                if ("skew" not in name) and (kwargs["skew"] != 1):
                     continue
-            # Run the experiment.
-            t = Timer()
-            for _ in range(100):
-                x = creator(**kwargs)
-                _, lengths = orthogonalize(x)  # Treats columns as vectors.
-                if (min(lengths) > 2**(-26)):
+                # Ensure that "n" is at least "d+1".
+                kwargs["n"] = max(kwargs["n"], kwargs["d"]+1)
+                # Generate the path for saving the results.
+                data_path = os.path.join(output_dir, f"v{version}-{name}-{trial+1}_" + "_".join((k+f"={v}" for (k,v) in kwargs.items())) + ".pkl")
+                print(time.strftime("%H:%M:%S "), data_path)
+                if os.path.exists(data_path):
+                    with open(data_path, "rb") as f:
+                        data = pickle.load(f)
+                        print(" ", data["prediction_time"], "seconds,",
+                              data["num_errors"], "errors with codes",
+                              [e for e in data["errors"].keys() if e != 1])
+                        continue
+                # Run the experiment.
+                t = Timer()
+                for _ in range(100):
+                    x = creator(**kwargs)
+                    _, lengths = orthogonalize(x)  # Treats columns as vectors.
                     break
-            else:
-                raise(RuntimeError("Failed to generate points that are not degenerate."))
-            # TODO: "In distribution" extrapolation points come from same generator.
-            # TODO: Center is actually between the two most separated points.
-            center = x.mean(axis=0)
-            radius = np.sqrt(((x-center)**2).sum(axis=1)).max()
-            data_gen_time = t.stop()
-            # Generate test points, shift and scale them so they are surrounding the box.
-            num_test_points = 1000
-            extrapolation_ratio = 1.00
-            ibudget = 1000
-            points = extrapolation_ratio * radius * well_spaced_sphere(
-                num_points=num_test_points, dimension=kwargs["d"]
-            ) + center
-            # Compute the simplices for all extrapolation points.
-            t = Timer()
-            simps, weights, errors = delsparse(x, points, eps=None, ibudget=ibudget, extrap=2.0**52, version=version)
-            prediction_time = t.stop()
-            num_extrapolations = len(errors[1])
-            num_errors = sum(map(len, errors.values())) - num_extrapolations
-            print("", t, "seconds,", num_errors, "errors,", min(lengths), "from degenerate")
-            # Save the data and results to a file.
-            with open(data_path, "wb") as f:
-                pickle.dump(dict(
-                    x=x,
-                    center=center,
-                    radius=radius,
-                    data_gen_time=data_gen_time,
-                    num_test_points=num_test_points,
-                    extrapolation_ratio=extrapolation_ratio,
-                    points=points,
-                    simps=simps,
-                    weights=weights,
-                    errors=errors,
-                    prediction_time=prediction_time,
-                    num_extrapolations=num_extrapolations,
-                    num_errors=num_errors,
-                ), f)
+                    # if (min(lengths) > 2**(-40)):
+                    #     break
+                else:
+                    raise(RuntimeError("Failed to generate points that are not degenerate."))
+                # TODO: "In distribution" extrapolation points come from same generator.
+                # TODO: Center is actually between the two most separated points.
+                center = x.mean(axis=0)
+                radius = np.sqrt(((x-center)**2).sum(axis=1)).max()
+                data_gen_time = t.stop()
+                # Generate test points, shift and scale them so they are surrounding the box.
+                num_test_points = 1000
+                extrapolation_ratio = 1.00
+                ibudget = 1000
+                points = extrapolation_ratio * radius * well_spaced_sphere(
+                    num_points=num_test_points, dimension=kwargs["d"]
+                ) + center
+                # Compute the simplices for all extrapolation points.
+                t = Timer()
+                simps, weights, errors = delsparse(x, points, eps=None, ibudget=ibudget, extrap=2.0**52, version=version)
+                prediction_time = t.stop()
+                num_extrapolations = len(errors[1])
+                num_errors = sum(map(len, errors.values())) - num_extrapolations
+                print(" ", t, "seconds,", num_errors, "errors,", min(lengths), "from degenerate")
+                # Save the data and results to a file.
+                with open(data_path, "wb") as f:
+                    pickle.dump(dict(
+                        x=x,
+                        center=center,
+                        radius=radius,
+                        data_gen_time=data_gen_time,
+                        num_test_points=num_test_points,
+                        extrapolation_ratio=extrapolation_ratio,
+                        points=points,
+                        simps=simps,
+                        weights=weights,
+                        errors=errors,
+                        prediction_time=prediction_time,
+                        num_extrapolations=num_extrapolations,
+                        num_errors=num_errors,
+                    ), f)
 
