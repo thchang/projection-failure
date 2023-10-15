@@ -119,6 +119,7 @@ os.makedirs(output_dir, exist_ok=True)
 
 # When this is the 'main' program, execute the tests (but not when it is imported).
 if __name__ == "__main__":
+    total_experiments = 0
     # Iterate over both Delaunay versions.
     for trial in range(num_trials):
         # Run all experiments.
@@ -131,8 +132,9 @@ if __name__ == "__main__":
                     np.random.seed(seed)
                     random.seed(seed)
                     # Skip skew for creators that don't have any skew option.
-                    if ("skew" not in name) and (kwargs["skew"] != 1):
+                    if (("skew" in name) and (kwargs["skew"] == 1)) or (("skew" not in name) and (kwargs["skew"] != 1)):
                         continue
+                    total_experiments += 1
                     # Ensure that "n" is at least "d+1".
                     kwargs["n"] = max(kwargs["n"], kwargs["d"]+1)
                     # Generate the path for saving the results.
@@ -193,3 +195,5 @@ if __name__ == "__main__":
                             num_errors=num_errors,
                         ), f)
 
+    print("Total experiments:")
+    print("", total_experiments)
