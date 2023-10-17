@@ -3,3 +3,6 @@ networkx
 numpy
 pandas
 scipy
+tqdm
+tlux==0.0.48
+plotly==2.0.15

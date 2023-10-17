@@ -44,18 +44,26 @@ used in the original DelaunaySparse code.
 Before attempting to reproduce our results, take the following steps
 to install and build dependencies:
 
- - First make sure that you have a copy of ``gfortran`` installed on
+ - Make sure that you have a copy of ``gfortran`` installed on
    your machine (using the shell command ``gfortran`` to compile);
- - Next make sure that you have ``python 3.8`` or newer;
- - ``pip install`` the ``REQUIREMENTS.txt`` file in the base directory;
  - Fetch the old and new versions of DelaunaySparse into the ``experiments``
-   subdirectory using the command
-   ``git pull --recurse-submodules``
- - To build and test DelaunaySparse's shared object libraries, use the
-   command
-   ``cd experiments/ds_v1/DelaunaySparse/python && python example.py``
-   and
-   ``cd experiments/ds_v2/DelaunaySparse/python && python example.py``
+   subdirectory using the commands
+   ```
+   git submodule init
+   git submodule update --recursive --remote
+   ```
+ - Make sure that you have ``python 3.8`` or newer;
+ - We recommend that you set up a local python virtual environment for reproducibility
+   ```
+   python3 -m venv env
+   source env/bin/activate
+   ```
+ - Install requirements with ``python -m pip install -r REQUIREMENTS.txt`` in the base directory;
+ - Build and test DelaunaySparse's shared object libraries, use the command
+   ```
+   pushd experiments/ds_v1/DelaunaySparse/python && python example.py && popd
+   pushd experiments/ds_v2/DelaunaySparse/python && python example.py && popd
+   ```
 
 ## Reproducing Results
 
@@ -71,3 +79,23 @@ After following the above steps:
    comma-separated row-vectors.
    The last ``m`` lines contain the points to project onto the convex hull
    as comma-separated row-vectors.
+ - The generative experiments take approximately 50 hours to run on a 10 core 2021 Macbook Pro M1 laptop and can be executed and analyzed with the commands
+   ```
+   pushd experiments
+   python run_generative_tests.py
+   python process_generative_test_results.py
+   popd
+   ```
+ - Additionally some simple visualizations are provided that help provide intuition into how projection onto the Delaunay mesh works. First the following commands are needed to fix one of the required libraries:
+   ```
+   pushd env/lib/python3.11/site-packages/plotly/grid_objs
+   cp grid_objs.py old.grid_objs.py
+   python -c "import fileinput, re; [print(re.sub('from collections import MutableSequence', 'from collections.abc import MutableSequence', line), end='') for line in fileinput.input()]" < old.grid_objs.py > grid_objs.py
+   popd
+   ```
+   Then different explorations can be done with the following:
+   ```
+   python explore_sample_projection.py
+   python explore_sample_lattice_extrapolation.py
+   python explore_sample_delaunay.py
+   ```
